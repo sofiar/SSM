@@ -1,5 +1,5 @@
 ---
-title: "markdown"
+title: "Pruebas y simulaciones. Apendice leos Barajas 2016"
 output: html_document
 ---
 
@@ -7,22 +7,24 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+#### **Simulación de los datos**
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Vamos a simular datos para:
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+* 4 estados 
+* 50 series
+* 500 tiempos
+* 3 variables (los tres ejes de acelerómetros)
 
-```{r cars}
-summary(cars)
-```
+$$X_{si}=(X_{1i},X_{2i},X_{3i}) \sim NM_3(\mu_i,\Sigma_i)$$
+con $i=\{1,2,3,4\}$ (correspondiente a cada estado)
 
-## Including Plots
+#### **LOOCV**
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+Leave one out cross-validation. 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+1. Se deja una de las series de tiempo afuera (sea $k$)
+2. Se estiman los parámetros del modelo con las 49 restantes (medias y matrices de covarianza de las NMV, matriz de traslación y  probabilidades iniciales de cada estado)
+3. A partir de esos parámetros se calcula la serie de tiempos más probable para $k$ a partir del *algortimo recursivo de Viterbi*
+4. Se estima el error de predicción como la proporción de estados mal estimados sobre el total (sobre todos las series de tiempo) 
