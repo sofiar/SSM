@@ -7,7 +7,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#### **Simulación de los datos**
+### **Caso supervisado**
+
+
+#### Simulación de los datos 
+
 
 Vamos a simular datos para:
 
@@ -19,7 +23,7 @@ Vamos a simular datos para:
 $$X_{si}=(X_{1i},X_{2i},X_{3i}) \sim NM_3(\mu_i,\Sigma_i)$$
 con $i=\{1,2,3,4\}$ (correspondiente a cada estado)
 
-#### **LOOCV**
+##### LOOCV
 
 
 Leave one out cross-validation. 
@@ -28,3 +32,30 @@ Leave one out cross-validation.
 2. Se estiman los parámetros del modelo con las 49 restantes (medias y matrices de covarianza de las NMV, matriz de traslación y  probabilidades iniciales de cada estado)
 3. A partir de esos parámetros se calcula la serie de tiempos más probable para $k$ a partir del *algortimo recursivo de Viterbi*
 4. Se estima el error de predicción como la proporción de estados mal estimados sobre el total (sobre todos las series de tiempo) 
+
+
+
+### **Caso no supervisado**
+
+Se agrega la variable de viento (se incluye para modelar la matriz de transición)
+
+Se suponen dos estados ($S_1$ y $S_2$)
+
+Variable Viento: $W$(wind)  $W_t\sim U[\max\{0,w_{t-1}-2\},\min\{7,w_{t-1}+2\}]$
+
+$X=MSA$ (valor resumen de datos de acelerometría)
+Para el Estado 1 $X$ es un promedio de gammas
+$X_{S1}\sim \pi G(\mu_{11},\sigma_{11})+ (1-\pi)G(\mu_{12},\sigma_{12})$
+Para el Estado 2 $X$ se distribuye como una gamma
+$X_{S2}\sim G(\mu_{2},\sigma_{2})$
+
+Parámetros del modelo: $\Theta =(\mu,\sigma,\beta,\delta,\pi)$
+
+$\mu$ y $\sigma$ coeficientes de las Gammas, $\beta$ coeficientes de matriz de transicion, $\delta$ probas a tiempo inicial, $\pi$ proporcion de Gammas en el Estado 1 
+
+1. Se simulan 9 series de tiempo (9 dias) de longitud 200 ($X$ y $W$)
+2. Ajustan los parámetros por máxima versosimilitud 
+    1. Minimiza el log de la verosimilitud. Para calcular la verosimilitud, como las observaciones NO contienen
+los estados, utiliza el *algoritmo de foward* (analiza de forma recursiva todos los estados posibles)
+    2. Para minimizar el Log likehood utiliza un método numérico de Newton. Utiliza como valores iniciales para el optimizador los verdaderos. Obtiene entonces $\hat\Theta=(\hat\mu,\hat\sigma,\hat\beta,\hat\delta,\hat\pi)$
+
