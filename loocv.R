@@ -81,7 +81,7 @@ for (j in 1:50) {
 # parametros ajustados por todos los demas individuos. Para encontrar la secuencia de estados mas probable
 # utiliza el algoritmo recursivo de Viterbi
 
-
+source("funAux.R")
 data$predstate <- NA
 for(u in 1:50){
   ## Datos del individuo u
