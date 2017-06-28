@@ -109,12 +109,14 @@ for( j in 1:nsims){
 Stobs<-c(sum(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$steps),sd(pathelements(oz$sx,oz$sy)$turns),
          cdt(oz$sx,oz$sy,oz$st),cha(oz$sx,oz$sy) ,sd(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$turns),
          sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy))),acf(pathelements(oz$sx,oz$sy)$turn,plot=FALSE)$acf[5],
-         sd(ppp(oz$sx,oz$sy,oz$st)/dt),sd(pathelements(oz$sx,oz$sy)$direction))
+         sd(ppp(oz$sx,oz$sy,oz$st)/dt),sd(pathelements(oz$sx,oz$sy)$direction),
+         cdt2(pathelements(oz$sx,oz$sy)$steps,oz$st[2:length(oz$st)]),
+         mean(ppp(oz$sx,oz$sy,oz$st)/dt))
 
 
 
 Ssim<-data.frame(matrix(nrow=nsims,ncol=length(Stobs),NA))
-names(Ssim)<-c('A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11')
+names(Ssim)<-c('A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','A13')
 rs=numeric(nsims)
 for (i in 1:nsims)
 {
@@ -130,9 +132,12 @@ for (i in 1:nsims)
                 mean(pathelements(sX[,i][1:sv],sY[,i][1:sv])$turns),
                 sqrt(abs(max(sX[,i])-min(sX[,i]))+abs(max(sY[,i])-min(sY[,i]))),
                 acf(na.omit(pathelements(sX[,i],sY[,i])$turn),plot = FALSE)$acf[5],
-                sd(ppp(sX[,i],sY[,i],sT[,i])/dt))
+                sd(ppp(sX[,i],sY[,i],sT[,i])/dt),
+                sd(pathelements(sX[,i][1:sv],sY[,i][1:sv])$direction),
+                cdt2(pathelements(sX[,i],sY[,i])$steps,sT[,i][2:length(sT[,i])]),
+                mean(ppp(sX[,i],sY[,i],sT[,i])/dt))
     
-    rs[i]=rr(pathelements(oz$sx,oz$sy)$steps,pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps)
+    #rs[i]=rr(pathelements(oz$sx,oz$sy)$steps,pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps)
   }
   
 }
@@ -144,8 +149,8 @@ ss=Stobs
 
 nbest<-30
 
-Ssim=cbind(s$A1,s$A11)
-Stobs=cbind(ss[1],ss[11])
+Ssim=cbind(s$A2,log(s$A5),s$A6,s$A7,s$A11,s$A13)
+Stobs=cbind(ss[2],log(ss[5]),ss[6],ss[7],ss[11],ss[13])
 
 
 
@@ -211,7 +216,7 @@ b=layout(matrix(c(1,2,3,4,5,5), ncol=2, byrow=TRUE), heights=c(3,3,1))
 hist_scale=hist(s_scale[which==1],breaks = 10,plot=FALSE)
 density_scale=density(s_scale[which==1])
 xscale <- seq(-1, 11, length=100)
-y_scale <- dunif(xscale,min = 0,max=10)
+y_scale <- dunif(xscale,min = 0,max=5)
 
 plot(xscale,y_scale,type='l',main='Parameter: Scale',ylim=c(0,max(y_scale,max(density_scale$y))),col='darkseagreen4',xlab = 'scale',ylab = 'density')
 abline(v=mean(s_scale[which==1]),col='dodgerblue3')
@@ -274,7 +279,6 @@ hist(s_scale[aa])
 hist(s_mu[aa])
 
 
-val=s$A9
 val=rep(NA,nsims)
 for (i in 1:nsims)
 {
@@ -306,11 +310,13 @@ lines(sX[,aa[k]],sY[,aa[k]],col=2)
 
 }
 
-par(mfrow=c(1,2))
 
-hist(val[aa],freq=FALSE)
+par(mfrow=c(1,2))
+val=(s$A13)
+
+hist(val[aa],freq=FALSE,xlim = c(min(val),max(val)))
 abline(v=mean(val[aa]),col='red')
-hist(val,freq=FALSE)
+hist(val,freq=FALSE,xlim = c(min(val),max(val)))
 abline(v=mean(na.omit(val)),col='red')
 
 
