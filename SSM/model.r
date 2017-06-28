@@ -41,8 +41,7 @@ oz = observe(x,y,t,dt) # these are the observed data
 plot(x,y,type="l", asp=1)
 points(oz$sx,oz$sy,col=2, pch=16)
 lines(oz$sx,oz$sy,col=2)
-
-
+sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy)))
 
 
 #-------------------------------------------------------------------------------
@@ -62,10 +61,10 @@ sY = matrix(NA,length(oz$sx),nsims)
 sT = matrix(NA,length(oz$sx),nsims)
 
 # sample from priors
-s_scale <- runif(nsims,0,10)
+s_scale <- runif(nsims,0,5)
 s_shape <- runif(nsims,0.5,4)
 s_mu <- runif(nsims,-pi,pi)
-s_k <- runif(nsims,0,100)
+s_k <- runif(nsims,5,90)
 
 #-------------------------------------------------------------------------------
 # simulate movement and observations
@@ -110,12 +109,12 @@ for( j in 1:nsims){
 Stobs<-c(sum(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$steps),sd(pathelements(oz$sx,oz$sy)$turns),
          cdt(oz$sx,oz$sy,oz$st),cha(oz$sx,oz$sy) ,sd(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$turns),
          sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy))),acf(pathelements(oz$sx,oz$sy)$turn,plot=FALSE)$acf[5],
-         sd(ppp(oz$sx,oz$sy,oz$st)/dt))
+         sd(ppp(oz$sx,oz$sy,oz$st)/dt),sd(pathelements(oz$sx,oz$sy)$direction))
 
 
 
 Ssim<-data.frame(matrix(nrow=nsims,ncol=length(Stobs),NA))
-names(Ssim)<-c('A1','A2','A3','A4','A5','A6','A7','A8','A9','A10')
+names(Ssim)<-c('A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11')
 rs=numeric(nsims)
 for (i in 1:nsims)
 {
@@ -143,10 +142,11 @@ for (i in 1:nsims)
 s=Ssim
 ss=Stobs
 
-nbest<-50
+nbest<-10
 
-Ssim=cbind(s$A8,s$A10)
-Stobs=cbind(ss[8],ss[10])
+Ssim=cbind(s$A1,s$A11)
+Stobs=cbind(ss[1],ss[11])
+
 
 
 #A (Maybe we migth use a different set of data to estimate this mean and sd)
@@ -196,6 +196,12 @@ abline(v=t_scale,col='darkorange3')
 lines(density(a))
 
 
+
+
+### de a una variable
+
+which=numeric(nsims)
+which[order(abs(val-ss[11]))[1:nbest]]=1
 
 ############################ PLOT MARGINS ##################################
 b=layout(matrix(c(1,2,3,4,5,5), ncol=2, byrow=TRUE), heights=c(3,3,1))
@@ -253,3 +259,68 @@ plot.new()
 legend(x='center',ncol=4,inset=0,legend=c('prior','true value','estimated value', 'estimated porterior')
        ,fill=c('darkseagreen4','darkorange3','dodgerblue3','black'))
 dev.off()
+
+
+
+
+### vamos a ver como son los summaries que tiene valores de scale cercanos al verdadero
+
+aa=which(s_scale<(t_scale)+1/4 & s_scale>(t_scale)-1/4 & s_shape<(t_shape)+1/2 & s_shape>(t_shape)-1/2
+         & s_mu<(t_mu)+1/2 & s_mu>(t_mu)-1/2)
+bb=which(s_scale>4)
+
+
+hist(s_scale[aa])
+hist(s_mu[aa])
+
+
+val=s$A9
+val=rep(NA,nsims)
+for (i in 1:nsims)
+{
+  sv=length(na.omit(sX[,i]))
+  if(sv>2) # if one simulation is too short to observe something sv<=1
+  {
+    #val[i]<-sd(na.omit(pathelements(sX[,i],sY[,i])$direction))
+    #val[i]<-mean(na.omit(sX[,i]^2+sY[,i]^2))/sd(na.omit(sX[,i]^2+sY[,i]^2))        
+    #rs[i]=rr(pathelements(oz$sx,oz$sy)$steps,pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps)
+    val[i]=  sqrt(abs(max(sX[,i])-min(sX[,i]))+abs(max(sY[,i])-min(sY[,i])))
+    }
+  
+}
+
+
+
+
+for (k in 1:50)
+{
+plot(sX[,bb[k]],sY[,bb[k]],col=3, pch=16,xlab=as.character(s_scale[bb[k]]),
+     main=as.character(sqrt(abs(max(sX[,bb[k]])-min(sX[,bb[k]]))+abs(max(sY[,bb[k]])-min(sY[,bb[k]])))))
+lines(sX[,bb[k]],sY[,bb[k]],col=3)
+
+
+plot(sX[,aa[k]],sY[,aa[k]],col=2, pch=16,xlab=as.character(s_scale[aa[k]]),
+     main=as.character(sqrt(abs(max(sX[,aa[k]])-min(sX[,aa[k]]))+abs(max(sY[,aa[k]])-min(sY[,aa[k]])))))
+lines(sX[,aa[k]],sY[,aa[k]],col=2)
+
+
+}
+
+par(mfrow=c(1,2))
+
+hist(val[aa],freq=FALSE)
+abline(v=mean(val[aa]),col='red')
+hist(val,freq=FALSE)
+abline(v=mean(na.omit(val)),col='red')
+
+
+
+#sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy)))
+
+
+
+
+
+
+
+
