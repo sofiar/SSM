@@ -142,7 +142,7 @@ for (i in 1:nsims)
 s=Ssim
 ss=Stobs
 
-nbest<-10
+nbest<-30
 
 Ssim=cbind(s$A1,s$A11)
 Stobs=cbind(ss[1],ss[11])
