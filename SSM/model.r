@@ -7,9 +7,9 @@ source('/home/sofia/proyecto_doctoral/pruebas/SSM/funaux.R')
 nsteps <- 500 # number of moves performed by the animal
 
 # Parametrs of the model:
-t_scale = 1
+t_scale = 2
 t_shape = 2
-t_mu = pi/100
+t_mu = pi/2
 t_k = 20
 
 # simulate the movement
@@ -51,7 +51,7 @@ sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy)))
 #-------------------------------------------------------------------------------
 
 
-nsims <- 10e4#### see
+nsims <- 10e3#### see
 nsam <- 5000 # number of real steps in the simulations
 maxt = max(oz$st)
 nobs = length(oz$sx)
@@ -117,7 +117,7 @@ Stobs<-c(sum(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$ste
 
 Ssim<-data.frame(matrix(nrow=nsims,ncol=length(Stobs),NA))
 names(Ssim)<-c('A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','A13')
-rs=numeric(nsims)
+#rs=numeric(nsims)
 for (i in 1:nsims)
 {
   sv=length(na.omit(sX[,i]))
@@ -149,8 +149,8 @@ ss=Stobs
 
 nbest<-30
 
-Ssim=cbind(s$A2,log(s$A5),s$A6,s$A7,s$A11,s$A13)
-Stobs=cbind(ss[2],log(ss[5]),ss[6],ss[7],ss[11],ss[13])
+Ssim=cbind(s$A2,s$A3,s$A5,s$A6,s$A8,s$A7)
+Stobs=cbind(ss[2],ss[3],ss[5],ss[6],ss[8],ss[7])
 
 
 
@@ -199,9 +199,6 @@ plot(xscale,y_scale,type='l',main='Parameter: Scale',ylim=c(0,max(y_scale,max(de
 abline(v=mean(a),col='dodgerblue3')
 abline(v=t_scale,col='darkorange3')
 lines(density(a))
-
-
-
 
 ### de a una variable
 
@@ -266,7 +263,22 @@ legend(x='center',ncol=4,inset=0,legend=c('prior','true value','estimated value'
 dev.off()
 
 
+#### funciones de densidad de a dos 
+op<-par(mfrow=c(2,2))
 
+plot(s_mu[which==1],s_k[which==1],xlab='mu',ylab='k')
+points(t_mu,t_k,col='red',pch=17)
+
+plot(s_shape[which==1],s_scale[which==1],xlab='shape',ylab='scale')
+points(t_shape,t_scale,col='red',pch=17)
+
+plot(s_mu[which==1],s_scale[which==1],xlab='mu',ylab='scale')
+points(t_mu,t_scale,col='red',pch=17)
+
+plot(s_k[which==1],s_shape[which==1],xlab='k',ylab='shape')
+points(t_k,t_shape,col='red',pch=17)
+
+par(op)
 
 ### vamos a ver como son los summaries que tiene valores de scale cercanos al verdadero
 
