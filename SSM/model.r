@@ -153,8 +153,8 @@ ss=Stobs
 
 nbest<-30
 
-Ssim=cbind(s$A2,s$A3,s$A6,s$A7,s$A10,s$A11,s$A12,s$A13)
-Stobs=cbind(ss[2],ss[3],ss[6],ss[7],ss[10],ss[11],ss[12],ss[13])
+Ssim=cbind(s$A2,s$A3,s$A6,s$A7,s$A10,s$A11,s$A13)
+Stobs=cbind(ss[2],ss[3],ss[6],ss[7],ss[10],ss[11],ss[13])
 
 
 
@@ -226,6 +226,20 @@ lines(density(s_scale[which==1]))
 #legend(x=1.2,y=2.2,legend=c('prior','true value','estimated value', 'estimated porterior')
 #       ,fill=c('darkseagreen4','darkorange3','dodgerblue3','black'))
 
+
+### mean
+hist_mean=hist(s_mean[which==1],breaks = 10,plot=FALSE)
+density_mean=density(s_mean[which==1])
+xmean <- seq(-1, 11, length=100)
+y_mean <- dunif(xmean,min = 0,max=5)
+
+plot(xmean,y_mean,type='l',main='Parameter: Mean',ylim=c(0,max(y_mean,max(density_mean$y))),col='darkseagreen4',xlab = 'mean',ylab = 'density')
+abline(v=mean(s_mean[which==1]),col='dodgerblue3')
+abline(v=t_mean,col='darkorange3')
+lines(density(s_mean[which==1]))
+
+
+
 ### shape
 hist_shape=hist(s_shape[which==1],breaks = 10,plot=FALSE)
 density_shape=density(s_shape[which==1])
@@ -273,11 +287,11 @@ op<-par(mfrow=c(2,2))
 plot(s_mu[which==1],s_k[which==1],xlab='mu',ylab='k')
 points(t_mu,t_k,col='red',pch=17)
 
-plot(s_shape[which==1],s_scale[which==1],xlab='shape',ylab='scale')
-points(t_shape,t_scale,col='red',pch=17)
+plot(s_shape[which==1],s_mean[which==1],xlab='shape',ylab='mean')
+points(t_shape,t_mean,col='red',pch=17)
 
-plot(s_mu[which==1],s_scale[which==1],xlab='mu',ylab='scale')
-points(t_mu,t_scale,col='red',pch=17)
+plot(s_mu[which==1],s_mean[which==1],xlab='mu',ylab='mean')
+points(t_mu,t_mean,col='red',pch=17)
 
 plot(s_k[which==1],s_shape[which==1],xlab='k',ylab='shape')
 points(t_k,t_shape,col='red',pch=17)
