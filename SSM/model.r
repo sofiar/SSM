@@ -7,13 +7,15 @@ source('/home/sofia/proyecto_doctoral/pruebas/SSM/funaux.R')
 nsteps <- 500 # number of moves performed by the animal
 
 # Parametrs of the model:
-t_scale = 2
-t_shape = 2
-t_mu = pi/2
+#t_scale = 2
+t_mean=1
+t_shape = 1
+t_mu = pi/50
 t_k = 20
 
 # simulate the movement
-tm <- rweibull(nsteps, scale=t_scale, shape=t_shape) # time per move
+#tm <- rweibull(nsteps, scale=t_scale, shape=t_shape) # time per move
+tm<-rgamma(nsteps,shape=t_shape,scale=t_mean/t_shape)
 ls <- numeric(nsteps) + 1 # assume constant speed for now
 tu <- rvonmises(nsteps, mu=t_mu, kappa=t_k) # turning angle
 
@@ -52,7 +54,7 @@ sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy)))
 
 
 nsims <- 10e3#### see
-nsam <- 5000 # number of real steps in the simulations
+nsam <- 1000 # number of real steps in the simulations
 maxt = max(oz$st)
 nobs = length(oz$sx)
 h<-0.1
@@ -61,7 +63,8 @@ sY = matrix(NA,length(oz$sx),nsims)
 sT = matrix(NA,length(oz$sx),nsims)
 
 # sample from priors
-s_scale <- runif(nsims,0,5)
+#s_scale <- runif(nsims,0,5)
+s_mean<- runif(nsims,0,3)
 s_shape <- runif(nsims,0.5,4)
 s_mu <- runif(nsims,-pi,pi)
 s_k <- runif(nsims,5,90)
@@ -78,7 +81,8 @@ for( j in 1:nsims){
   st <- numeric(nsam)
   sdi <- numeric(nsam)
   sdi[1] <- runif(1)*2*pi #angulo inicial
-  tm <- rweibull(nsam, scale=s_scale[j], shape=s_shape[j])
+  #tm <- rweibull(nsam, scale=s_scale[j], shape=s_shape[j])
+  tm<-rgamma(nsam,shape=s_shape[j],scale=s_mean[j]/s_shape[j])
   tur <- rvonmises(nsam, mu=circular(s_mu[j]), kappa=s_k[j]) 
   i=1
   ## simulation of the trajectory
@@ -103,7 +107,7 @@ for( j in 1:nsims){
 #-------------------------------------------------------------------------------
 ## summaries
 #-------------------------------------------------------------------------------
-
+ 
 ## Calculation of the summaries for the TRUE observation
 
 Stobs<-c(sum(pathelements(oz$sx,oz$sy)$steps),mean(pathelements(oz$sx,oz$sy)$steps),sd(pathelements(oz$sx,oz$sy)$turns),
@@ -123,17 +127,17 @@ for (i in 1:nsims)
   sv=length(na.omit(sX[,i]))
   if(sv>2) # if one simulation is too short to observe something sv<=1
   {
-    Ssim[i,]<-c(sum(pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps), 
-                mean(pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps),
-                sd(pathelements(sX[,i][1:sv],sY[,i][1:sv])$turns),
+    Ssim[i,]<-c(sum(pathelements(sX[,i],sY[,i])$steps), 
+                mean(pathelements(sX[,i],sY[,i])$steps),
+                sd(pathelements(sX[,i],sY[,i])$turns),
                 cdt(sX[,i],sY[,i],sT[,i]),
                 cha(sX[,i],sY[,i]),
-                sd(pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps),
-                mean(pathelements(sX[,i][1:sv],sY[,i][1:sv])$turns),
+                sd(pathelements(sX[,i],sY[,i])$steps),
+                mean(pathelements(sX[,i],sY[,i])$turns),
                 sqrt(abs(max(sX[,i])-min(sX[,i]))+abs(max(sY[,i])-min(sY[,i]))),
                 acf(na.omit(pathelements(sX[,i],sY[,i])$turn),plot = FALSE)$acf[5],
                 sd(ppp(sX[,i],sY[,i],sT[,i])/dt),
-                sd(pathelements(sX[,i][1:sv],sY[,i][1:sv])$direction),
+                sd(pathelements(sX[,i],sY[,i])$direction),
                 cdt2(pathelements(sX[,i],sY[,i])$steps,sT[,i][2:length(sT[,i])]),
                 mean(ppp(sX[,i],sY[,i],sT[,i])/dt))
     
@@ -149,8 +153,8 @@ ss=Stobs
 
 nbest<-30
 
-Ssim=cbind(s$A2,s$A3,s$A5,s$A6,s$A8,s$A7)
-Stobs=cbind(ss[2],ss[3],ss[5],ss[6],ss[8],ss[7])
+Ssim=cbind(s$A2,s$A3,s$A6,s$A7,s$A10,s$A11,s$A12,s$A13)
+Stobs=cbind(ss[2],ss[3],ss[6],ss[7],ss[10],ss[11],ss[12],ss[13])
 
 
 
@@ -203,7 +207,7 @@ lines(density(a))
 ### de a una variable
 
 which=numeric(nsims)
-which[order(abs(val-ss[11]))[1:nbest]]=1
+which[order(abs(val-valp))[1:nbest]]=1
 
 ############################ PLOT MARGINS ##################################
 b=layout(matrix(c(1,2,3,4,5,5), ncol=2, byrow=TRUE), heights=c(3,3,1))
@@ -282,59 +286,54 @@ par(op)
 
 ### vamos a ver como son los summaries que tiene valores de scale cercanos al verdadero
 
-aa=which(s_scale<(t_scale)+1/4 & s_scale>(t_scale)-1/4 & s_shape<(t_shape)+1/2 & s_shape>(t_shape)-1/2
-         & s_mu<(t_mu)+1/2 & s_mu>(t_mu)-1/2)
+aa=which(s_scale<(t_scale)+1/2 & s_scale>(t_scale)-1/2 & s_shape<(t_shape)+1/2 & s_shape>(t_shape)-1/2
+         & s_mu<(t_mu)+1/2 & s_mu>(t_mu)-1/2 & s_k<(t_k)+4 & s_k>(t_k)-4)
 bb=which(s_scale>4)
 
 
-hist(s_scale[aa])
-hist(s_mu[aa])
-
+#### prueba de nuevos summaries
 
 val=rep(NA,nsims)
+
+
+
 for (i in 1:nsims)
 {
   sv=length(na.omit(sX[,i]))
   if(sv>2) # if one simulation is too short to observe something sv<=1
   {
+   
+    st=pathelements(sX[,i],sX[,i])$steps
+    stt=numeric(length (st))
+    for (m in 1:length(st))
+    {
+      stt[m]=sum(st[1:m])
+    }
     #val[i]<-sd(na.omit(pathelements(sX[,i],sY[,i])$direction))
     #val[i]<-mean(na.omit(sX[,i]^2+sY[,i]^2))/sd(na.omit(sX[,i]^2+sY[,i]^2))        
     #rs[i]=rr(pathelements(oz$sx,oz$sy)$steps,pathelements(sX[,i][1:sv],sY[,i][1:sv])$steps)
-    val[i]=  sqrt(abs(max(sX[,i])-min(sX[,i]))+abs(max(sY[,i])-min(sY[,i])))
+    #val[i]=  sqrt(abs(max(sX[,i])-min(sX[,i]))+abs(max(sY[,i])-min(sY[,i])))
+    val[i]=cdt2(stt,sT[,i][2:length(sT[,i])])
     }
   
 }
 
-
-
-
-for (k in 1:50)
+st=pathelements(oz$sx,oz$sy)$steps
+stt=numeric(length (st))
+for (m in 1:length(st))
 {
-plot(sX[,bb[k]],sY[,bb[k]],col=3, pch=16,xlab=as.character(s_scale[bb[k]]),
-     main=as.character(sqrt(abs(max(sX[,bb[k]])-min(sX[,bb[k]]))+abs(max(sY[,bb[k]])-min(sY[,bb[k]])))))
-lines(sX[,bb[k]],sY[,bb[k]],col=3)
-
-
-plot(sX[,aa[k]],sY[,aa[k]],col=2, pch=16,xlab=as.character(s_scale[aa[k]]),
-     main=as.character(sqrt(abs(max(sX[,aa[k]])-min(sX[,aa[k]]))+abs(max(sY[,aa[k]])-min(sY[,aa[k]])))))
-lines(sX[,aa[k]],sY[,aa[k]],col=2)
-
-
+  stt[m]=sum(st[1:m])
 }
-
+valp=cdt2(stt,oz$st[2:length(oz$st)])
 
 par(mfrow=c(1,2))
-val=(s$A13)
 
-hist(val[aa],freq=FALSE,xlim = c(min(val),max(val)))
-abline(v=mean(val[aa]),col='red')
-hist(val,freq=FALSE,xlim = c(min(val),max(val)))
+hist(val[aa],freq=FALSE,xlim = c(min(na.omit(val)),max(na.omit(val))))
+abline(v=mean(na.omit(val[aa])),col='red')
+abline(v=ss[6],col='blue')
+hist(val,freq=FALSE,xlim = c(min(na.omit(val)),max(na.omit(val))))
 abline(v=mean(na.omit(val)),col='red')
-
-
-
-#sqrt(abs(max(oz$sx)-min(oz$sx))+abs(max(oz$sy)-min(oz$sy)))
-
+abline(v=ss[6],col='blue')
 
 
 
