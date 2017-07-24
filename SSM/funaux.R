@@ -57,6 +57,25 @@ cdt<-function(x,y,t)
 }
 
 
+cdt2<-function(sl,t)
+{
+tmp = lm(formula =sl ~ t + 0)
+return(as.numeric(tmp$coefficient))
+}
+
+nsd<-function(elemento)
+{
+  ee=na.omit(elemento)
+  val=numeric(length(ee))
+  for(i in 1:length(ee))
+  {
+    val[i]=sum(abs(ee[1:i]))  
+  }
+  return(val)
+}
+
+
+
 cha<-function(x,y){
   tmp <- which(is.finite(x))
   i <- chull(x[tmp],y[tmp])
