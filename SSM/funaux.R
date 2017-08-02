@@ -63,6 +63,14 @@ tmp = lm(formula =sl ~ t + 0)
 return(as.numeric(tmp$coefficient))
 }
 
+
+si<-function(c,s,p,b)
+{
+  tmp = 2*(p*((1-c^2-s^2)/((1-c^2)+s^2)+b^2))^(-0.5)
+  return(tmp)
+}
+
+
 nsd<-function(elemento)
 {
   ee=na.omit(elemento)
@@ -73,6 +81,26 @@ nsd<-function(elemento)
   }
   return(val)
 }
+
+distancia2<-function(a,b)
+{
+  salida<-(a[1]-b[1])^2+(a[2]-b[2])^2
+return(salida)
+}
+it<-function(pasos,xx,yy)
+{
+  N=length(xx)
+  x0=xx[1]
+  y0=yy[1]
+  xF=xx[N]
+  yF=yy[N]
+  
+  de=distancia2(c(x0,y0),c(xF,yF))  
+
+  salida<-sqrt(de)/sum(pasos)
+  return(salida)
+  
+   }
 
 
 
