@@ -3,6 +3,7 @@
 
 library(circular) 
 library(mvtnorm)
+library(truncnorm)
 source('/home/sofia/proyecto_doctoral/pruebas/SSM/funaux.R')
 
 nsteps <- 800 # number of moves performed by the animal
@@ -34,7 +35,7 @@ for(i in 2:nsteps){
 
 # we observe at time dt (pay attention to this parameter)
 
-dt <- 2 # time interval for observations
+dt <- 1 # time interval for observations
 oz = observe(x,y,t,dt) # these are the observed data
 
 
@@ -51,7 +52,7 @@ lines(oz$sx,oz$sy,col=2)
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 
-nsims <- 1e5#### see
+nsims <- 2e5#### see
 nsam <- 1000 # number of real steps in the simulations
 maxt = max(oz$st)
 nobs = length(oz$sx)
@@ -197,7 +198,7 @@ for (i in 1:nsims)
 par(mfrow=c(1,3))
 ## Now we have to decide which indices we keep
 
-nbest<-20
+nbest<-60
 quienes=c(1,2,3,4,9,12)
 ss=Stobs[quienes]
 s=Ssim[,quienes]
@@ -220,16 +221,129 @@ points(t_w,t_k,col='red',pch=21,bg='red')
 plot(s_k[which==1],s_mu[which==1],xlim=c(5,90),ylim=c(-pi,pi))
 points(t_k,t_mu,col='red',pch=21,bg='red')
 
-par(mfrow=c(1,2))
-ind=12
-pp=which(s_k<=30)
-p=which(s_k>50)
-hist(Ssim[pp,ind])
-hist(Ssim[p,ind])
+
+############### prueba: Algoritmo ABC MCMC sampler #############################
+# probamos a ver si mejora la predición si utilizo un algortimo de MCMC basado en
+# el ajuste que me da el anterior (Aceptacion-rechazo)
+
+# estimamos la matriz de varianzas y covarianzas los parametros w,k y mu 
+
+Sdw=sd(s_w[which==1])
+Sdmu=sd(s_mu[which==1])
+Sdk=sd(s_k[which==1])
+c=(2.4)^2
+library(MASS)
+library(TruncatedNormal)
+
+## simulaciones 
+
+nsims <- 2e5#### see
+nsam <- 1000 # number of real steps in the simulations
+maxt = max(oz$st)
+nobs = length(oz$sx)
+epsilon=0.04
+#sX = matrix(NA,length(oz$sx),nsims)
+#sY = matrix(NA,length(oz$sx),nsims)
+#sT = matrix(NA,length(oz$sx),nsims)
+
+# sample from priors
 
 
+ww <- rep(NA,nsims)
+mmu <- rep(NA,nsims)
+kk <- rep(NA,nsims)
 
+ww[1] <- sample(s_w[which==1],1)
+mmu[1] <-sample(s_mu[which==1],1)
+kk[1] <- sample(s_k[which==1],1)
 
+#-------------------------------------------------------------------------------
+# simulate movement and observations
+#-------------------------------------------------------------------------------
+
+for( j in 1:nsims){
+  
+  sx <- numeric(nsam)
+  sy <- numeric(nsam)
+  st <- numeric(nsam)
+  sdi <- numeric(nsam)
+  sdi[1] <- runif(1)*2*pi #angulo inicial
+  #Jumping Normal
+ params = c(rtruncnorm(1,a=0.1,b=5,mean=ww[j],sd=c*Sdw),
+           rvonmises(1,mu=circular(mmu[j]),kappa=c*Sdmu),
+           rtruncnorm(1,a=5,b=90,mean=kk[j],sd=c*Sdk))
+  #jumping Uniform (revisar)
+#  params = c(runif(1,a=max(0.1,ww[j]-6*Sdw),b=min(5,ww[j]+6*Sdw)),
+#             runif(1,a=max(-pi,circular(circular(mmu[j],zero='2pi')-6*Sdmu,zero='2pi')),b=min(pi,mmu[j]+6*Sdw)),
+#             runif(1,a=max(5,kk[j]-6*Sdk),b=min(90,kk[j]+sd=c*Sdk))
+  
+   
+  
+  tm<-rexp(nsam,rate=params[1])
+  tur <- rvonmises(nsam, mu=circular(params[2]), kappa=params[3]) 
+  i=1
+  ## simulation of the trajectory
+  while(st[i]<maxt & i<nsam){
+    i=i+1
+    st[i] <- st[i-1] + tm[i]
+    sdi[i] <- sdi[i-1]+tur[i]
+    sx[i] <- sx[i-1] + cos(sdi[i]) * tm[i]
+    sy[i] <- sy[i-1] + sin(sdi[i]) * tm[i]
+  }
+  # observe the movement process at time interval dt
+  sz = observe(sx[1:i],sy[1:i],st[1:i],dt)
+  sobs = length(sz$sx)
+  sv <- min(nobs,sobs) ### ???? Para que ????
+  
+### calculo de los summaries
+  
+  sv=length(na.omit(sz$sx))
+  if(sv>2) # if one simulation is too short to observe something sv<=1
+  {
+    pe=pathelements(sz$sx[1:sv],sz$sy[1:sv])
+    cts=mean(cos(pe$turns))
+    sts=mean(sin(pe$turns))
+  
+    
+    summarie<-c(mean(pe$steps),
+                sd(pe$turns),
+                cdt2(pe$steps,sT[,i][2:sv]),
+                sd(pe$steps),
+                sqrt((cts)^2+(sts)^2),
+                angular.deviation(circular(pe$turns))
+                )
+    
+  ### aceptamos ?
+  unif=runif(1,0,1)
+
+  aaa=dtruncnorm(params[1],b=Inf,mean=ww[j],sd=c*Sdw)* dvonmises(params[2],mu=mmu[j],kappa=c*Sdmu)* 
+  dtruncnorm(params[3],a=0,b=Inf,mean=kk[j],sd=c*Sdk)
+  
+  bbb=dtruncnorm(ww[j],b=Inf,mean=params[1],sd=c*Sdw)* dvonmises(mmu[j],mu=params[2],kappa=c*Sdmu)* 
+    dtruncnorm(kk[j],a=0,b=Inf,mean=params[3],sd=c*Sdk)
+
+cociente=bbb/aaa
+  
+  if (mahalanobis(summarie,center=Stobs[c(1,2,3,4,9,12)],cov=A)<epsilon && unif<=cociente)
+  {
+    ww[j+1]=params[1]
+    mmu[j+1]=params[2]
+    kk[j+1]=params[3]
+  }
+  else
+  {
+    ww[j+1]=ww[j]
+    mmu[j+1]=mmu[j]
+    kk[j+1]=kk[j]
+  }
+  
+  } 
+
+}
+
+plot(mmu,ylim = c(-pi,pi))
+plot(kk,ylim = c(5,90))
+plot(ww,ylim = c(0.1,5))
 
 
 
