@@ -116,7 +116,7 @@ legend(-115,-0.005,xpd=NA,bty='n',
 
 
 #################### Veamos como es la varianza de los summaries ############################
-ntrue=1e4
+ntrue=100
 SumObs=data.frame(matrix(nrow=ntrue,ncol=5,NA))
 for (l in 1:ntrue)
 {
@@ -132,6 +132,7 @@ for (l in 1:ntrue)
                 cdt2(ps$steps,oz$st[2:length(oz$st)]),
                 sd(ps$steps),
                 sqrt((mean(cos(ps$turns)))^2+(mean(sin(ps$turns)))^2))
+                #sum(ps$steps))
   
   
   
@@ -147,6 +148,7 @@ hist(SumObs[,5])
 
 
 
+
 hist(s[,1])
 hist(s[,2])
 hist(s[,3])
@@ -156,8 +158,9 @@ hist(s[,5])
 
 ####### Si quisiera hacer una comparacion considerando las trayectorias originales de a grupo 
 ngroup=100
-SumObs_ng=apply(SumObs[1:ngroup,],2,mean)
-SumObs_ng=apply(SumObs[501:600,],2,mean)
+#SumObs_ng=apply(SumObs[1:ngroup,],2,mean)
+SumObs_ng=apply(SumObs,2,mean)
+
 
 ### Tengo que generar ngruop trayectorias con los mismos parametros para poder comparar 
 
@@ -181,8 +184,10 @@ suppressWarnings(warning("as.circular"))
 suppressWarnings(warning("conversion.circularmuradians0counter"))
 suppressWarnings(warning("rvonmises"))
 
+nobs= length(oz$st)
+
 for( j in 1:Nnsim){
-  ssum=matrix(ncol=length(s),nrow=ngroup)
+  ssum=matrix(ncol=length(SumObs_ng),nrow=ngroup)
   for(i in 1:ngroup)
   {
   sim=cppRW_exp(s_k[j], nsam, s_mu[j], s_w[j],maxt) # simulate RW using the cpp function. Ver aca el tema  de los tiempos
@@ -204,6 +209,7 @@ for( j in 1:Nnsim){
                 cdt2(pe$steps,sz$st[2:sv]),
                 sd(pe$steps),
                 sqrt((cts)^2+(sts)^2))
+                #sum(pe$steps))
   }
   
       }
@@ -221,7 +227,7 @@ nbest<-100
 A=cov(na.omit(SumSim))
 Mahal=apply(SumSim,1,mahalanobis,center=SumObs_ng,cov=A)
 
-which=numeric(nsims)
+which=numeric(Nnsim)
 which[order(Mahal)[1:nbest]]=1 
 
 
