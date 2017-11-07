@@ -130,12 +130,23 @@ List ABC_CRW(int nsims,int nsams,int maxt,int nobs,double ddt){
   int sv=0;
   sv=min(NumericVector::create(nobss,dims));
   
-  //Rcout << sv << "\n";
   if (sv<nobss){
-    NumericVector tail(nobss,NA_REAL);
-    sX(_,i)= tail;
-    sY(_,i)= tail;
-    sT(_,i)= tail;
+    //NumericVector tail((nobss-sv),NA_REAL);
+    sX(_,i)=Obss(_,0);
+    sY(_,i)=Obss(_,1);
+    sT(_,i)=Obss(_,2);
+    
+    for(int k=sv; k<nobss; k++)
+    {
+      sX(k,i)=NA_REAL;
+      sY(k,i)=NA_REAL;
+      sT(k,i)=NA_REAL;
+    }
+    
+    //Rcout << sX(_,i) << "\n";
+    //sX(_,i)= NumericVector::create(tail);
+   //sY(_,i)= NumericVector::create(tail);
+   //sT(_,i)= NumericVector::create(tail);
    
   
   }
