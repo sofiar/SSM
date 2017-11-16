@@ -1,5 +1,6 @@
 #### Funciones auxiliares
 library(splancs)
+library(RcppArmadillo)
 
 ## de una trayectoria de moviemiento (x,y,t) da la obsevacion correspondiente a tiempo dt
 observe <- function(x,y,t,dt){
@@ -52,21 +53,21 @@ pathelements <- function(X,Y){
 
 cdt<-function(x,y,t)
 {R1=x^2+y^2
- tmp = lm(formula = R1 ~ t + 0)
+ tmp = fastLm(formula = R1 ~ t + 0)
  return(as.numeric(tmp$coefficient))
 }
 
 
 cdt2<-function(sl,t)
 {
-tmp = lm(formula =sl ~ t + 0)
+tmp = fastLm(formula =sl ~ t + 0)
 return(as.numeric(tmp$coefficient))
 }
 
 
 si<-function(c,s,p,b)
 {
-  tmp = 2*(p*((1-c^2-s^2)/((1-c^2)+s^2)+b^2))^(-0.5)
+  tmp = 2*(p*((1-c^2-s^2)/((1-c)^2+s^2)+b^2))^(-0.5)
   return(tmp)
 }
 
@@ -75,9 +76,11 @@ nsd<-function(elemento)
 {
   ee=na.omit(elemento)
   val=numeric(length(ee))
-  for(i in 1:length(ee))
+  val[1]=ee[1]
+  for(i in 2:length(ee))
   {
-    val[i]=sum(abs(ee[1:i]))  
+    #val[i]=sum(abs(ee[1:i]))  
+    val[i]=val[i-1]+abs(ee[i])
   }
   return(val)
 }
@@ -98,11 +101,19 @@ it<-function(pasos,xx,yy)
   de=distancia2(c(x0,y0),c(xF,yF))  
 
   salida<-sqrt(de)/sum(pasos)
+  #salida<-sum(pasos)/cha(xx,yy)
+  
   return(salida)
   
    }
 
-
+rtn<-function(xx,yy,tt)
+{
+  li=c(xx[1],yy[1])
+  cords=cbind(xx,yy)
+  dist.or=apply(cords,1,distancia2,b=li)
+  sd(dist.or)
+  }
 
 cha<-function(x,y){
   tmp <- which(is.finite(x))
@@ -148,4 +159,12 @@ ppp<-function(x,y,t)
   }
   return(val2)
 }
+
+  
+  
+  
+  
+  
+
+
 
