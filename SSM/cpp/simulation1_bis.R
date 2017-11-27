@@ -8,7 +8,7 @@ setwd("/home/sofia/proyecto_doctoral/pruebas/SSM/cpp")
 
 Rcpp::sourceCpp('PathelementsCpp.cpp')
 Rcpp::sourceCpp('RW_exp.cpp')
-Rcpp::sourceCpp('/home/sofia/proyecto_doctoral/pruebas/SSM/cppObs.cpp')
+Rcpp::sourceCpp('cppObs.cpp')
 
 nsteps <- 800 # number of moves performed by the animal
 
