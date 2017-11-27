@@ -14,7 +14,7 @@ Rcpp::sourceCpp('PathelementsCpp.cpp')
 nsteps <- 800 # number of moves performed by the animal
 
 # movement parameters:
-t_w=2
+t_w=3
 t_k = 20
 t_mu=pi/50
 
@@ -74,7 +74,7 @@ for( j in 1:nsims){
 ## Calculation of the summaries for the TRUE observation
 
 
-ps=pathelements(oz$sx,oz$sy)
+ps=PathelementsCpp(oz$sx,oz$sy)
 
 
 #bb=acf(circular(ps$direction),plot=FALSE)
@@ -89,21 +89,22 @@ aa=acf(ps$steps,plot=FALSE)
 
 ct=mean(cos(ps$turns))
 st=mean(sin(ps$turns))
-bo=sd(ps$steps)/abs(mean(ps$steps))
+bo=sd(ps$steps)#/abs(mean(ps$steps))
 
 Stobs<-c(mean(ps$steps),
          sd(ps$turns),
          cdt2(ps$steps,oz$st[2:length(oz$st)]),
          sd(ps$steps),
-         mean(ps$turns),
-         mean(aa$acf),
+         #mean(ps$turns),
+         #mean(aa$acf),
          sqrt((mean(cos(ps$turns)))^2+(mean(sin(ps$turns)))^2),
-         it(ps$steps,oz$sx,oz$sy),
-         sd.circular(circular(ps$direction)),
-         angular.deviation(circular(ps$turns)),
-         si(ct,st,mean(ps$steps),bo))
+         cdt2(nsd(ps$steps),oz$st[2:length(oz$st)]))
+        #it(ps$steps,oz$sx,oz$sy),
+         #sd.circular(circular(ps$direction)),
+         #angular.deviation(circular(ps$turns)),
+         #si(ct,st,mean(ps$steps),bo))
          # t2,
-      #   r2
+        #   r2
         
 
 
@@ -116,12 +117,12 @@ for (i in 1:nsims)
   {
     
    # sv=length(na.omit(sX[,i]))
-    pe=pathelements(sX[,i][1:sv],sY[,i][1:sv])
+    pe=PathelementsCpp(sX[,i][1:sv],sY[,i][1:sv])
     
    # bbs=acf(circular(pe$direction),plot=FALSE)
     #llmmms=lm(bbs$lag[2:length(bbs$lag)]~bbs$acf[2:length(bbs$lag)])
     
-    aas=acf(pe$steps,plot=FALSE)
+    #aas=acf(pe$steps,plot=FALSE)
     #llmms=lm(aas$lag[2:length(aas$lag)]~aas$acf[2:length(aas$lag)])
     
     #t2s=(sum((sX[,i][1:(sv-1)]-sX[,i][2:sv])^2))/(sv-1)/+
@@ -130,20 +131,21 @@ for (i in 1:nsims)
     
     cts=mean(cos(pe$turns))
     sts=mean(sin(pe$turns))
-    bos=sd(pe$steps)/abs(mean(pe$steps))
+    #bos=sd(pe$steps)/abs(mean(pe$steps))
     
     
     Ssim[i,]<-c(mean(pe$steps),
                 sd(pe$turns),
                 cdt2(pe$steps,sT[,i][2:sv]),
                 sd(pe$steps),
-                mean(pe$turns),
-                mean(aas$acf),
+                #mean(pe$turns),
+                #mean(aas$acf),
                 sqrt((cts)^2+(sts)^2),
-                it(pe$steps,sX[,i][1:sv],sY[,i][1:sv]),
-                sd.circular(circular(pe$direction)),
-                angular.deviation(circular(pe$turns)),
-                si(cts,sts,mean(pe$steps),bos))
+                cdt2(nsd(pe$steps),sT[,i][2:sv]))
+                #it(pe$steps,sX[,i][1:sv],sY[,i][1:sv]),
+                #sd.circular(circular(pe$direction)),
+                #angular.deviation(circular(pe$turns)),
+                #si(cts,sts,mean(pe$steps),bos))
                 
                 #t2s,
                 #r2s)
@@ -157,11 +159,14 @@ for (i in 1:nsims)
 ########################### Now we have to decide which indices we keep  ##########################
 
 nbest<-200
-#quienes=c(1,2,3,4,8)
-quienes=c(1,2,3,4,7)
+quienes=c(2,3,4,5,6)
+#quienes=c(1,2,3,4,7)
+
 ss=Stobs[quienes]
+#ss=Stobs
 s=Ssim[,quienes]
-#b=Ssim[1:4e4,]
+#s=Ssim
+
 
 #Mahalanobis
 A=cov(na.omit(s))
@@ -175,11 +180,11 @@ which[order(Mahal)[1:nbest]]=1
 
 par(mfrow=c(1,3),oma=c(1,1,0,1))
 
-plot(s_w[which==1],s_mu[which==1],xlim=c(0.1,5),ylim=c(-pi,pi),xlab='w',
+plot(s_w[which==1],s_mu[which==1],xlim=c(0.1,10),ylim=c(-pi,pi),xlab='w',
      ylab='mu',pch=21,bg='black',cex.lab=2,cex.axis=2)
 points(t_w,t_mu,col='red',pch=21,bg='red',cex=2)
 
-plot(s_w[which==1],s_k[which==1],xlim=c(0.1,5),ylim=c(5,90),xlab='w',
+plot(s_w[which==1],s_k[which==1],xlim=c(0.1,10),ylim=c(5,90),xlab='w',
      ylab='k',pch=21,bg='black',cex.lab=2,cex.axis=2)
 points(t_w,t_k,col='red',pch=21,bg='red',cex=2)
 
@@ -193,13 +198,13 @@ par(mfrow=c(1,3),mar=c(8,5,4,1))
 
 
 ##### w
-density_scale=density(s_w[which==1],bw=0.3,from=-1.0,to=10)
+density_scale=density(s_w[which==1],bw=0.4,from=-0.1,to=10)
 xscale <- seq(-0.5, 10.5, length=100)
 y_scale <- dunif(xscale,min = 0,max=10)
 
 plot(xscale,y_scale,type='l',main=expression(lambda),ylim=c(0,max(y_scale,max(density_scale$y)))
-     ,col='red',xlab = '',ylab = 'Density',cex.axis=1.9,
-     cex.main=2,cex.lab=2,lwd=2)
+     ,col='red',xlab = '',ylab = 'Density',cex.axis=1.5,
+     cex.main=2,cex.lab=1.5,lwd=2)
 
 abline(v=mean(s_w[which==1]),col='dodgerblue3',lwd=2)
 abline(v=t_w,col='darkorange3',lwd=2)
@@ -212,20 +217,20 @@ y_scale <- dunif(xscale,min = -pi, max=pi)
 
 plot(xscale,y_scale,type='l',main=expression(mu),
      ylim=c(0,max(y_scale,max(density_scale$y))),col='red',
-     xlab = '',ylab = '',cex.main=2,cex.lab=2,lwd=2,cex.axis=1.9)
+     xlab = '',ylab = '',cex.main=2,cex.lab=1.5,lwd=2,cex.axis=1.5)
 abline(v=mean(s_mu[which==1]),col='dodgerblue3',lwd=2)
 abline(v=t_mu,col='darkorange3',lwd=2)
 lines(density_scale,lwd=2)
 
 
 ##### k
-density_scale=density(s_k[which==1],bw=4,from=-1,to=100)
+density_scale=density(s_k[which==1],bw=3,from=3,to=100)
 xscale <- seq(0,105, length=100)
-y_scale <- dunif(xscale,min = 5, max=100)
+y_scale <- dunif(xscale,min = 3, max=100)
 
 plot(xscale,y_scale,type='l',main=expression(k),
      ylim=c(0,max(y_scale,max(density_scale$y))),xlab='',col='red',ylab = '',
-    cex.main=2,cex.lab=2,lwd=2,cex.axis=1.9)
+    cex.main=2,cex.lab=1.5,lwd=2,cex.axis=1.5)
 abline(v=mean(s_k[which==1]),col='dodgerblue3',lwd=2)
 abline(v=t_k,col='darkorange3',lwd=2)
 lines(density_scale,lwd=2)
