@@ -58,7 +58,7 @@ for (j in 1:n)
 }
 mu[[1]]=apply(SumSim,2,mean)
 sigma[[1]]=cov(SumSim)
-
+cc=0
 nsims=10000
 for (i in 2:nsims)
 {
@@ -99,6 +99,7 @@ for (i in 2:nsims)
     mu[[i]]=mup
     sigma[[i]]=sigmap
     print('acepto')
+    cc=cc+1
     print(kk)
     print(ww)
     
@@ -123,5 +124,13 @@ plot(sw[1:(i-1)],type='l',ylim=c(0,10))
 abline(a=t_w,b=0,col="blue")
 
 
+plot(density(sk[500:(i-1)],bw=.6),xlim=c(0,100),main='k')
+abline(v=t_k,col='darkorange3',lwd=2)
+abline(v=mean(sk[500:(i-1)]),col='dodgerblue3',lwd=2)
+
+
+plot(density(sw[500:(i-1)],bw=.6),xlim=c(0,10),main=expression(lambda))
+abline(v=t_w,col='darkorange3',lwd=2)
+abline(v=mean(sw[500:(i-1)]),col='dodgerblue3',lwd=2)
 
 

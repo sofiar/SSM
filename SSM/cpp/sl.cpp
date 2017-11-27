@@ -381,6 +381,8 @@ List slcpp(double ddt,double tk ,double tw, int nn, int nsim, int nstep,
  //Rest
   
   for(int i=1; i<(nsims); i++){
+    ww=Rcpp::as<double>(rtruncnorm(1,0.1,10.0,sw[i-1],1.5));
+    kk=Rcpp::as<double>(rtruncnorm(1,0.1,100.0,sk[i-1],20.0));
    
   for (int m=0; m<n;m++ )
   {
@@ -402,12 +404,12 @@ List slcpp(double ddt,double tk ,double tw, int nn, int nsim, int nstep,
   double coc(0);
   double num(0);
   double den(0);
-  num=dNM(muu,sigmaa,SumTrue)*Rcpp::as<double>(dtruncnorm(sw[i-1],0.1,10.0,ww,1.5))*
+  num=dNM(mup,sigmap,SumTrue)*Rcpp::as<double>(dtruncnorm(sw[i-1],0.1,10.0,ww,1.5))*
     Rcpp::as<double>(dtruncnorm(sk[i-1],0.1,100.0,kk,20.0));
   den=dNM(muu,sigmaa,SumTrue)*Rcpp::as<double>(dtruncnorm(ww,0.1,10.0,sw[i-1],1.5))
     *Rcpp::as<double>(dtruncnorm(kk,0.1,100.0,sk[i-1],1.5));
     
-    Rcout<<dNM(muu,sigmaa,SumTrue)<<'\n'; 
+    Rcout<<dNM(mup,sigmap,SumTrue)<<'\n'; 
  
  
  coc=num/den;
