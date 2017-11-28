@@ -10,7 +10,7 @@ setwd("/home/sofia/proyecto_doctoral/pruebas/SSM/cpp")
 
 Rcpp::sourceCpp('PathelementsCpp.cpp')
 Rcpp::sourceCpp('RW_exp_cor.cpp')
-Rcpp::sourceCpp('/home/sofia/proyecto_doctoral/pruebas/SSM/cppObs.cpp')
+Rcpp::sourceCpp('/home/sofia/proyecto_doctoral/pruebas/SSM/cpp/cppObs.cpp')
 Rcpp::sourceCpp('/home/sofia/proyecto_doctoral/pruebas/SSM/cpp/sl.cpp')
 
 nsteps <- 800 # number of moves performed by the animal
@@ -43,6 +43,10 @@ sk=numeric(nsims)
 sw[1]=runif(1,0.1,10)
 sk[1]=runif(1,0.1,100)
 
+sdw=1
+sdk=15
+
+
 mu=list()
 sigma=list()
 
@@ -59,11 +63,11 @@ for (j in 1:n)
 mu[[1]]=apply(SumSim,2,mean)
 sigma[[1]]=cov(SumSim)
 cc=0
-nsims=10000
+
 for (i in 2:nsims)
 {
-  ww=rtruncnorm(1,a=0.1,b=10,mean=sw[i-1],sd=1.5)
-  kk=rtruncnorm(1,a=0.1,b=100,mean=sk[i-1],sd=20)
+  ww=rtruncnorm(1,a=0.1,b=10,mean=sw[i-1],sd=sdw)
+  kk=rtruncnorm(1,a=0.1,b=100,mean=sk[i-1],sd=sdk)
   
   for (j in 1:n)
   {
@@ -77,22 +81,25 @@ for (i in 2:nsims)
   sigmap=cov(SumSim)
   
   ### Aceptamos?
-  coc=(dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=FALSE)*
-         dtruncnorm(sw[i-1],a=0.1,b=10,mean=ww,sd=1.5)*
-         dtruncnorm(sk[i-1],a=0.1,b=100,mean=kk,sd=20))/
-    (dmvnorm(SumTrue, mean=mu[[i-1]], sigma=sigma[[i-1]], log=FALSE)*
-       dtruncnorm(ww,a=0.1,b=10,mean=sw[i-1],sd=1.5)*
-       dtruncnorm(kk,a=0.1,b=100,mean=sk[i-1],sd=20))
+  
+  coc=exp(dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=TRUE)-
+            dmvnorm(SumTrue, mean=mu[[i-1]], sigma=sigma[[i-1]],log=TRUE))
+
+#  coc=(dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=FALSE)*
+#         dtruncnorm(sw[i-1],a=0.1,b=10,mean=ww,sd=1.5)*
+#         dtruncnorm(sk[i-1],a=0.1,b=100,mean=kk,sd=20))/
+#    (dmvnorm(SumTrue, mean=mu[[i-1]], sigma=sigma[[i-1]], log=FALSE)*
+#       dtruncnorm(ww,a=0.1,b=10,mean=sw[i-1],sd=1.5)*
+#       dtruncnorm(kk,a=0.1,b=100,mean=sk[i-1],sd=20))
   
   
-  if(is.na(coc))
-  {
-    coc=0
-  }
+  #if(is.na(coc))
+  #{
+  #  coc=0
+  #}
   
   r=min(1,coc)
-  u=runif(1)
-  if(u<coc)
+  if(runif(1)<r)
   {
     sk[i]=kk
     sw[i]=ww
@@ -115,6 +122,10 @@ for (i in 2:nsims)
   
 }
 
+#### Proporcion de Aceptacion
+cc/nsims
+
+
 #### Resultados plots
 
 plot(sk[1:(i-1)],type='l',ylim=c(0,100))
@@ -132,5 +143,9 @@ abline(v=mean(sk[500:(i-1)]),col='dodgerblue3',lwd=2)
 plot(density(sw[500:(i-1)],bw=.6),xlim=c(0,10),main=expression(lambda))
 abline(v=t_w,col='darkorange3',lwd=2)
 abline(v=mean(sw[500:(i-1)]),col='dodgerblue3',lwd=2)
+
+
+
+
 
 
