@@ -35,89 +35,89 @@ SumTrue=sumaries(ps$direction,ps$turns, ps$steps, oz$sx,oz$sy)
 ##########################   SIMULATIONS #############################
 
 n=20
+n.par=2
 nsims=1000
 snsteps=1000
 sw=numeric(nsims)
 sk=numeric(nsims)
 
-sw[1]=runif(1,0.1,10)
-sk[1]=runif(1,0.1,100)
+ac = matrix(0,n.par,2)  # for acceptance rates
+sd.prop = rep(1,n.par)       # sd for the proposal distributions
+eig <- eigen(diag(n.par))
+la = eig$values
+vect = eig$vectors
 
-sdw=1
-sdk=15
+params=matrix(0,nsims,n.par)
+params[1,1]=runif(1,0.1,10)
+params[1,2]=runif(1,0.1,100)
 
-
-mu=list()
-sigma=list()
 
 #### Firt
 SumSim=matrix(NA,n,8)
 for (j in 1:n)
 {
-  sim=cppRW_exp_cor(sk[1],sw[1],snsteps,maxt)
+  sim=cppRW_exp_cor(k=params[1,2],w=params[1,1],snsteps,maxt)
   obs=cppObs(sim$x,sim$y,sim$t,dt)
   pe=PathelementsCpp(obs$sx,obs$sy)
   SumSim[j,]=sumaries(pe$direction,pe$turns, pe$steps, obs$sx,obs$sy)
 
 }
-mu[[1]]=apply(SumSim,2,mean)
-sigma[[1]]=cov(SumSim)
-cc=0
+mu1=apply(SumSim,2,mean)
+sigma1=cov(SumSim)
+
+slik=dmvnorm(SumTrue, mean=mu1, sigma=sigma1, log=TRUE)
+
 
 for (i in 2:nsims)
 {
-  ww=rtruncnorm(1,a=0.1,b=10,mean=sw[i-1],sd=sdw)
-  kk=rtruncnorm(1,a=0.1,b=100,mean=sk[i-1],sd=sdk)
-  
-  for (j in 1:n)
+  params[i,]=params[i-1,]
+  for (k in 1:n.par)
   {
-    sim=cppRW_exp_cor(kk,ww,snsteps,maxt)
-    obs=cppObs(sim$x,sim$y,sim$t,dt)
-    pe=PathelementsCpp(obs$sx,obs$sy)
+  newp=params[i,]  
+  newp[k]=rnorm(1,mean=params[i-1,k],sd=sd.prop[k])  
+  if(newp[k]<0)
+  {next}
+  ac[k,1] = ac[k,1] + 1
+ 
+  SumSim=sloop(dt,k=params[i,2] ,w=params[i,1], n, snteps,maxt)
+   
+ # for (j in 1:n)
+#  {
+#    sim=cppRW_exp_cor(k=params[i,2],w=params[i,1],snsteps,maxt)
+#    obs=cppObs(sim$x,sim$y,sim$t,dt)
+#    pe=PathelementsCpp(obs$sx,obs$sy)
     
-    SumSim[j,]<-sumaries(pe$direction,pe$turns, pe$steps, obs$sx,obs$sy)
-  }
+ #   SumSim[j,]<-sumaries(pe$direction,pe$turns, pe$steps, obs$sx,obs$sy)
+#  }
   mup=apply(SumSim,2,mean)
   sigmap=cov(SumSim)
   
+  n.slik=dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=TRUE)
+  
   ### Aceptamos?
-  
-  coc=exp(dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=TRUE)-
-            dmvnorm(SumTrue, mean=mu[[i-1]], sigma=sigma[[i-1]],log=TRUE))
-
-#  coc=(dmvnorm(SumTrue, mean=mup, sigma=sigmap, log=FALSE)*
-#         dtruncnorm(sw[i-1],a=0.1,b=10,mean=ww,sd=1.5)*
-#         dtruncnorm(sk[i-1],a=0.1,b=100,mean=kk,sd=20))/
-#    (dmvnorm(SumTrue, mean=mu[[i-1]], sigma=sigma[[i-1]], log=FALSE)*
-#       dtruncnorm(ww,a=0.1,b=10,mean=sw[i-1],sd=1.5)*
-#       dtruncnorm(kk,a=0.1,b=100,mean=sk[i-1],sd=20))
-  
-  
-  #if(is.na(coc))
-  #{
-  #  coc=0
-  #}
+  coc=exp(n.slik-slik)
   
   r=min(1,coc)
-  if(runif(1)<r)
+  if(runif(1)<r) 
   {
-    sk[i]=kk
-    sw[i]=ww
-    mu[[i]]=mup
-    sigma[[i]]=sigmap
-    print('acepto')
-    cc=cc+1
-    print(kk)
-    print(ww)
+    ac[k,2] = ac[k,2] + 1
+    params[i,]=newp
+    slik=n.slik
+    #mu[[i]]=mup
+    #sigma[[i]]=sigmap
+    print(params[i,])
+    print(i)
     
     
   }
-  else
-  {
-    sk[i]=sk[i-1]
-    sw[i]=sw[i-1]
-    mu[[i]]=mu[[i-1]]
-    sigma[[i]]=sigma[[i-1]]
+  #else
+  #{
+  #  sk[i]=sk[i-1]
+  #  sw[i]=sw[i-1]
+  #  mu[[i]]=mu[[i-1]]
+  #  sigma[[i]]=sigma[[i-1]]
+  #}  
+    
   }
   
 }
@@ -128,12 +128,11 @@ cc/nsims
 
 #### Resultados plots
 
-plot(sk[1:(i-1)],type='l',ylim=c(0,100))
-abline(a=t_k,b=0,col="blue")
-
-plot(sw[1:(i-1)],type='l',ylim=c(0,10))
+plot(params[1:(i-1),1],type='l',ylim=c(0,10))
 abline(a=t_w,b=0,col="blue")
 
+plot(params[1:(i-1),2],type='l',ylim=c(0,100))
+abline(a=t_k,b=0,col="blue")
 
 plot(density(sk[500:(i-1)],bw=.6),xlim=c(0,100),main='k')
 abline(v=t_k,col='darkorange3',lwd=2)
