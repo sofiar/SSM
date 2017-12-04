@@ -3,13 +3,13 @@
 library(circular)
 library(Rcpp)
 #library(adehabitatHR)
-source('/home/sofia/proyecto_doctoral/pruebas/SSM/funaux.R')
-setwd("/home/sofia/proyecto_doctoral/pruebas/SSM/cpp")
+source('SSM/funaux.R')
+#setwd("/home/sofia/proyecto_doctoral/pruebas/SSM/cpp")
 
 #Rcpp::sourceCpp('RW_exp_cor.cpp')
-Rcpp::sourceCpp('RW_exp.cpp')
-Rcpp::sourceCpp('/home/sofia/proyecto_doctoral/pruebas/SSM/cppObs.cpp')
-Rcpp::sourceCpp('PathelementsCpp.cpp')
+Rcpp::sourceCpp('SSM/cpp/RW_exp.cpp')
+Rcpp::sourceCpp('SSM/cpp/cppObs.cpp')
+Rcpp::sourceCpp('SSM/cpp/PathelementsCpp.cpp')
 
 nsteps <- 800 # number of moves performed by the animal
 
@@ -27,12 +27,21 @@ dt <- 3 # time interval for observations
 oz <- cppObs(true_sim$x,true_sim$y,true_sim$t,dt) # these are the observed data
 points(oz$sx,oz$sy,col='red',pch=16)
 
+#----
+# mismo pero usando ggplot
+library(tidyverse)
+true_sim %>% 
+  ggplot() + geom_path(aes(x,y)) + geom_point( aes(x,y) ) +
+  geom_point(data=oz, aes(sx,sy), color=I('red')) + 
+  theme_bw() + theme(aspect.ratio = 1)
+#---
 
 #######################################################################################################
 ##########################################       ABC       ############################################ 
 #######################################################################################################
 
-nsims <- 4e5#### see
+# nsims <- 4e5#### see
+nsims <- 1e3
 nsam <- 1000 # number of real steps in the simulations
 maxt = max(oz$st)
 nobs = length(oz$sx)
@@ -72,10 +81,7 @@ for( j in 1:nsims){
 ############################### Summaries ######################################
 
 ## Calculation of the summaries for the TRUE observation
-
-
 ps=PathelementsCpp(oz$sx,oz$sy)
-
 
 #bb=acf(circular(ps$direction),plot=FALSE)
 #llmmm=lm(bb$lag[2:length(bb$lag)]~bb$acf[2:length(bb$lag)])
@@ -154,6 +160,17 @@ for (i in 1:nsims)
   
 }
 
+#---
+# simulated parameter against summary stat
+# might be usefull to explore if the summary stat related with the true parameter
+# (not sure if I am plotting the right things)
+data_frame(s_w, s_mu, s_k) %>% bind_cols(Ssim) %>%
+  gather(stat, stat.val, -s_w, -s_mu, -s_k) %>%
+  gather(param, par.sim, -stat, -stat.val) %>%
+  ggplot() + geom_point(aes(par.sim, stat.val)) + 
+  facet_wrap(stat~param, scales='free', ncol = 3, 
+             labeller = label_wrap_gen(multi_line=FALSE))
+#---
 
 
 ########################### Now we have to decide which indices we keep  ##########################
