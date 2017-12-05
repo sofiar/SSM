@@ -34,7 +34,7 @@ SumTrue=sumaries(ps$direction,ps$turns, ps$steps, oz$sx,oz$sy)
 
 ##########################   SIMULATIONS #############################
 
-n=20
+n=25
 n.par=2
 nsims=1000
 snsteps=1000
@@ -42,7 +42,7 @@ sw=numeric(nsims)
 sk=numeric(nsims)
 
 ac = matrix(0,n.par,2)  # for acceptance rates
-sd.prop = rep(1,n.par)       # sd for the proposal distributions
+sd.prop = c(1,3)       # sd for the proposal distributions
 eig <- eigen(diag(n.par))
 la = eig$values
 vect = eig$vectors
@@ -75,11 +75,13 @@ for (i in 2:nsims)
   {
   newp=params[i,]  
   newp[k]=rnorm(1,mean=params[i-1,k],sd=sd.prop[k])  
+  #print(newp)
+  print(i)
   if(newp[k]<0)
   {next}
   ac[k,1] = ac[k,1] + 1
  
-  SumSim=sloop(dt,k=params[i,2] ,w=params[i,1], n, snteps,maxt)
+  SumSim=sloop(dt,k=newp[2] ,w=newp[1], n, snsteps,maxt)
    
  # for (j in 1:n)
 #  {
@@ -89,6 +91,7 @@ for (i in 2:nsims)
     
  #   SumSim[j,]<-sumaries(pe$direction,pe$turns, pe$steps, obs$sx,obs$sy)
 #  }
+ 
   mup=apply(SumSim,2,mean)
   sigmap=cov(SumSim)
   
@@ -96,6 +99,7 @@ for (i in 2:nsims)
   
   ### Aceptamos?
   coc=exp(n.slik-slik)
+  print(n.slik)
   
   r=min(1,coc)
   if(runif(1)<r) 
@@ -105,8 +109,9 @@ for (i in 2:nsims)
     slik=n.slik
     #mu[[i]]=mup
     #sigma[[i]]=sigmap
+    print('aceptamos')
     print(params[i,])
-    print(i)
+    
     
     
   }
@@ -123,7 +128,7 @@ for (i in 2:nsims)
 }
 
 #### Proporcion de Aceptacion
-cc/nsims
+ac[,2]/ac[,1]
 
 
 #### Resultados plots
@@ -142,6 +147,19 @@ abline(v=mean(sk[500:(i-1)]),col='dodgerblue3',lwd=2)
 plot(density(sw[500:(i-1)],bw=.6),xlim=c(0,10),main=expression(lambda))
 abline(v=t_w,col='darkorange3',lwd=2)
 abline(v=mean(sw[500:(i-1)]),col='dodgerblue3',lwd=2)
+
+
+#################################################################################
+library(coda)
+
+n.b=nsims/3
+w.chain=mcmc(params[n.b:nsims,1])  
+summary(w.chain)
+plot(w.chain)
+
+k.chain=mcmc(params[n.b:nsims,2])  
+summary(k.chain)
+plot(k.chain)
 
 
 
