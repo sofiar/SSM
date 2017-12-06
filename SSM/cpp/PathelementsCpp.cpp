@@ -49,8 +49,8 @@ if (adif[j]<-3.141593)
   if (adif[j]>3.141593)
   {adif[j]=adif[j]-2*(3.141593);}
       }
-  co = adj/step;
-  sii = op/step;  
+  sii = adj/step;
+  co = op/step;  
 //  adif[mm]=  0.0 / 0.0;
 
   //List ret;
