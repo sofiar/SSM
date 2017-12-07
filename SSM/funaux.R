@@ -161,8 +161,28 @@ ppp<-function(x,y,t)
 }
 
   
+Summaries2<-function(dir,turn,steps,cos,sin,ox,oy,ot,dt)
+{
+  a=cdt(ox,oy,ot)
+  vv=length(ot)
+  b=fastLm(cos[2:vv]~cos[1:(vv-1)]+0)$coefficients
+  ct=mean(cos)
+  st=mean(sin)
   
+  #c=acf(ps$direction,plot=FALSE)$acf[3]  
+  bo=sd(steps)
   
+  salida<-c(mean(steps),
+              sd(turn),
+              bo,
+              sicpp(ct,st,mean(steps),bo),
+              b[1],
+              sum(steps)/ot[vv],
+              a)
+
+  return(salida)
+
+}
   
   
 
