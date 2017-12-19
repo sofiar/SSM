@@ -17,6 +17,7 @@ Rcpp::sourceCpp('SSM/cpp/RW_exp.cpp')
 Rcpp::sourceCpp('SSM/cpp/cppObs.cpp')
 Rcpp::sourceCpp('SSM/cpp/PathelementsCpp.cpp')
 Rcpp::sourceCpp('SSM/cpp/sl.cpp')
+Rcpp::sourceCpp('SSM/cpp/FastCrw.cpp')
 
 
 #############################################################################
@@ -24,12 +25,12 @@ Rcpp::sourceCpp('SSM/cpp/sl.cpp')
 ################################### CRW #####################################
 
 
-nsteps <- 2000 # number of moves performed by the animal
+nsteps <- 1500 # number of moves performed by the animal
 
-# movement parameters:
-t_w=6
+# movement parameters
+t_w=2
 t_k = 20
-dt <- 1.2# time interval for observations
+dt <- 3# time interval for observations
 
 # simulate true moves
 NN=10# number of real trayectories to compare
@@ -39,7 +40,7 @@ maxt=NA
 nobs=NA
 for (i in 1:NN)
 {
-  true_sim <- cppRW_exp_cor(t_k,  t_w, nsteps, Inf) # simulate RW using the cpp function
+  true_sim <- cppFastCRW_exp(t_k,  t_w, nsteps, Inf) # simulate RW using the cpp function
   oz <- cppObs(true_sim$x,true_sim$y,true_sim$t,dt) # these are the observed data
   TT[[i]]=oz
   maxt=min(maxt,max(oz$st),na.rm=T)
@@ -57,6 +58,8 @@ sT = matrix(NA,length(oz$sx),nsims)
 
 # sample from priors
 
+
+
 s_w <- runif(nsims,0.1,10)
 #s_mu <- runif(nsims,-pi,pi)
 s_k <- runif(nsims,5,100)
@@ -67,8 +70,9 @@ suppressWarnings(warning("rvonmises"))
 
 for( j in 1:nsims){
   
-  sim=cppRW_exp_cor(s_k[j], s_w[j],nsam,maxt) # simulate RW using the cpp function. Ver aca el tema  de los tiempos
-  # observe the movement process at time interval dt
+  #sim=cppFastCRW_exp(s_k[j], s_w[j],nsam,maxt) # simulate RW using the cpp function. Ver aca el tema  de los tiempos
+  sim=cppFastCRW_exp(s_k[j], t_w,nsam,maxt) # simulate RW using the cpp function. Ver aca el tema  de los tiempos
+    # observe the movement process at time interval dt
   sz <- cppObs(sim$x,sim$y,sim$t,dt) # these are the observed data
   sobs = length(sz$sx)
   sv <- min(nobs,sobs) 
@@ -81,12 +85,62 @@ for( j in 1:nsims){
 
 
 
+##################### Calculo de Estadisticos Resumen ########################
+
+Ssim<-data.frame(matrix(nrow=nsims,ncol=7,NA))
+
+nonones=which(!is.na(sY[1,]))
+
+for (m in 1:length(nonones))
+{
+  j=nonones[m]
+  osx=na.omit(sX[,j])
+  osy=na.omit(sY[,j])
+  ost=na.omit(sT[,j])
+  
+  
+  ps=PathelementsCpp(osx,osy)
+  
+  a=cdt(osx,osy,ost)
+  b=fastLm(ps$cosine[2:length(ps$cosine)]~ps$cosine[1:(length(ps$cosine)-1)]+0)$coefficients[1]
+  #  bb=lm(ps$cosine[2:length(ps$cosine)]~ps$cosine[1:(length(ps$cosine)-1)]+0)$coefficients[1]
+  
+  ct=mean(ps$cosine)
+  st=mean(ps$sine)
+  
+  Ssim[m,]<-c(mean(ps$steps),
+              sd(ps$turns),
+              sd(ps$steps),
+              sicpp(ct,st,mean(ps$steps),sd(ps$steps)),
+              b,
+              sum(ps$steps)/ost[sv],
+              a)
+  
+}
+
+
+
+
+
 ####### Plot
 
 df=bind_cols(Ssim)
 names(df)<-c('Mean Steps','sd Turns', 'Sd Steps', 'SI', 'b. cosine', 
              'Sum(steps)/TF', 'MSD')
 #---
+
+data_frame(s_k) %>% bind_cols(df)%>%
+  gather(stat, stat.val, -s_k) %>%
+  gather(param, par.sim, -stat, -stat.val) %>%
+  ggplot() + geom_point(aes(par.sim, stat.val)) + 
+  facet_wrap(stat~param, scales='free', ncol = 1, 
+             labeller = label_wrap_gen(multi_line=FALSE))+
+  labs(x = 'K', y=paste('w=',as.character(t_w),' dt=',as.character(dt),
+                        ' MaxT=',as.character(maxt)))
+
+
+#---
+
 
 
 #CRW
@@ -98,6 +152,19 @@ data_frame(s_w, s_k) %>% bind_cols(df)%>%
   facet_wrap(stat~param, scales='free', ncol = 2, 
              labeller = label_wrap_gen(multi_line=FALSE))
 #---
+
+
+
+
+
+
+Data=data.frame(cbind(Ssim,s_w,s_k))
+names(Data)=c('MeanS','SdTurns','SdSteps','SI','b.cos','Sum(s)/tf','MSD','w','k')
+
+plot_ly(Data,x=~w,y=~k,z=~MeanS,
+      type='scatter3d',mode='points',colors='YlOrRd',color = ~MeanS) %>%
+  add_markers() 
+
 
 
 
