@@ -7,7 +7,11 @@ library(mvtnorm)
 library(abc)
 library(randomForest)
 
+# ==============================================================
+# FUNCIONES
+# ==============================================================
 source('SSM/funaux.R')
+
 Rcpp::sourceCpp('SSM/cpp/abc_crw.cpp')
 Rcpp::sourceCpp('SSM/cpp/PathelementsCpp.cpp')
 Rcpp::sourceCpp('SSM/cpp/RW_exp_cor.cpp')
@@ -15,10 +19,12 @@ Rcpp::sourceCpp('SSM/cpp/cppObs.cpp')
 
 # 1.2 funciones para calcular stat y simular datos
 # funcion que simula datos a partir del valor de: w, k, dt, nsteps
-simdata <- function(ws, ks, dt, nsteps) {
-  cppRW_exp_cor(k=ks, w= ws, ns=nsteps, maxx= Inf) %>% # simulate RW using the cpp function
-    with( cppObs(x=x, y=y, t=t, dt=dt) ) # these are the observed data
+simdata <- function(ws, ks, dt.list, nsteps) {
+  xx <- cppRW_exp_cor(k=ks, w= ws, ns=nsteps, maxx= Inf) # simulate RW using the cpp function
+  names(dt.list) <- paste('dt', dt.list, sep='_')
+  lapply(dt.list, function(z) with(xx, cppObs(x=x, y=y, t=t, dt=z) ) ) # these are the observed data
 }
+
 # funcion que calcula los estadisticos a un conjunto de datos
 # no me queda claro para que se usa el 'nobs' 
 stat_fun <- function( dd ) {
@@ -49,59 +55,71 @@ stat_fun <- function( dd ) {
   return(sale)
 }
 
-# un solo conjunto de datos 'reales'
+#stat_fun(oz)
 
-nsteps <- 800 # number of moves performed by the animal
-# movement parameters:
+# funcion que simula un dato y calcula el stat
+f1 <- function( par, dt.list, ns ) {
+  simdata(ws=par[1], ks=par[2], dt.list = dt.list, nsteps=ns) %>%
+    lapply( stat_fun )
+}
+# ==============================================================
+
+# un solo conjunto de datos 'reales', con 3 dt = .05, .5, 5 
+# tener cuidado que los nsteps, y dt.list coincidan con los que se 
+# usaron para obtener las simulaciones
+
 t_w <- 2
 t_k <- 20
-dt  <- 2 # time interval for observations
-data.obs <- simdata(ws=t_w, ks=t_k, dt=dt, nsteps=nsteps)
-stat.obs <- stat_fun(data.obs) %>% set_names(nm = paste('T', 1:10, sep=''))
+
+data.obs <- simdata(ws=t_w, ks=t_k, dt.list = list(.05, .5, 5), nsteps=800)
+
+stat.obs <- lapply(data.obs, stat_fun) %>%
+  bind_rows() %>%
+  mutate( stat.nm = paste('T', 1:10, sep='') ) %>%
+  gather(dt, stat.val, starts_with('dt') ) %>%
+  spread(stat.nm, stat.val)
+
+# funcion que estima dos ajuste por abc: 
+#   usando los summary stat
+#   usando un modelo RF para obterner una transformacion de los summary stat
+abc_fn <- function(d) {
+  # primero hago los modelos RF
+  rf.w <- randomForest( s_w ~ . , data = dplyr::select(d, -s_k, -dt) )
+  rf.k <- randomForest( s_k ~ . , data = dplyr::select(d, -s_w,-dt) )
+  rf.stsim <- data_frame(s_w = predict(rf.w), s_k = predict(rf.k) )
+  
+  stobs = stat.obs %>% filter(dt == d$dt[1])
+  rf.stat.obs <- c( predict(rf.w, newdata = stobs  ), predict(rf.k, newdata = stobs ) ) 
+  
+  # abc usando los summary stat
+  out <- abc(target = as.numeric(stobs[-1]), 
+             param = d[, 1:2], 
+             sumstat = d[, 4:13] , tol = .5, 
+             method='neuralnet')
+  
+  # abc usando los RF de summary stat
+  out.rf <- abc(target = rf.stat.obs, 
+                param = d[, 1:2], 
+                sumstat = rf.stsim , tol = .5, 
+                method='neuralnet')
+  list(out, out.rf)
+}
+
 
 # Usamos dos previas, para cada previa podemos usar, los summary stat o un rf de los summary stat
 statsim.unif <- readRDS('SSM/statsim_unif.rds')
 statsim.norm <- readRDS('SSM/statsim_norm.rds')
 
-out.unif <- abc(target = stat.obs, 
-              param = statsim.unif[, 1:2], 
-              sumstat = statsim.unif[, 3:12] , tol = .5, 
-              method='neuralnet')
-summary(out.unif)
-plot(out.unif, param = statsim.unif[, 1:2])
+out.unif <- statsim.unif %>% 
+  split.data.frame( factor(statsim.unif$dt)  ) %>%
+  lapply( abc_fn )
 
+out.norm <- statsim.norm %>% 
+  split.data.frame( factor(statsim.norm$dt)  ) %>%
+  lapply( abc_fn )
 
-rf.unif.w <- randomForest( s_w ~ . , data = dplyr::select(statsim.unif, -s_k) )
-rf.unif.k <- randomForest( s_k ~ . , data = dplyr::select(statsim.unif, -s_w) )
-rf.statsim.unif <- data_frame(s_w = predict(rf.unif.w), s_k = predict(rf.unif.k) )
-
-rf.stat.obs <- c( predict(rf.unif.w, newdata = t( as.data.frame(stat.obs) ) ),
-                  predict(rf.unif.k, newdata = t( as.data.frame(stat.obs) ) ) )
-
-out.unif.rf <- abc(target = rf.stat.obs, 
-                param = statsim.unif[, 1:2], 
-                sumstat = rf.statsim.unif , tol = .5, 
-                method='neuralnet')
-
-summary(out.unif.rf)
-#-----
-
-
-sd.norm <- statsim.norm %>% dplyr::select(T1:T10) %>% apply( 2, sd )
-# scale(statsim.norm[, 3:12] ,center=FALSE)
-out.norm <- abc(target = stat.obs, 
-                param = statsim.norm[, 1:2], 
-                sumstat = statsim.norm[,3:12] , tol = .2, 
-                method='neuralnet')
-summary(out.norm)
-plot(out.norm, param = statsim.norm[, 1:2])
-
-statsim.norm %>% 
-  gather(stat, stat.val, -s_w, -s_k) %>% 
-  gather(param, param.val, s_w, s_k) %>% 
-  ggplot(aes(stat.val, param.val)) + geom_hex() +
-  facet_wrap(param~stat, scales = 'free')
-
+saveRDS(out.unif, file='SSM/out_unif.rds')
+saveRDS(out.norm, file='SSM/out_norm.rds')
 
 
   

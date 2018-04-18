@@ -27,9 +27,10 @@ Rcpp::sourceCpp('SSM/cpp/cppObs.cpp')
 
 # 1.2 funciones para calcular stat y simular datos
 # funcion que simula datos a partir del valor de: w, k, dt, nsteps
-simdata <- function(ws, ks, dt, nsteps) {
-  cppRW_exp_cor(k=ks, w= ws, ns=nsteps, maxx= Inf) %>% # simulate RW using the cpp function
-    with( cppObs(x=x, y=y, t=t, dt=dt) ) # these are the observed data
+simdata <- function(ws, ks, dt.list, nsteps) {
+  xx <- cppRW_exp_cor(k=ks, w= ws, ns=nsteps, maxx= Inf) # simulate RW using the cpp function
+  names(dt.list) <- paste('dt', dt.list, sep='_')
+  lapply(dt.list, function(z) with(xx, cppObs(x=x, y=y, t=t, dt=z) ) ) # these are the observed data
 }
 
 # funcion que calcula los estadisticos a un conjunto de datos
@@ -65,24 +66,15 @@ stat_fun <- function( dd ) {
 #stat_fun(oz)
 
 # funcion que simula un dato y calcula el stat
-f1 <- function( par, dt, ns ) {
-  simdata(ws=par[1], ks=par[2], dt=dt, nsteps=ns) %>%
-   stat_fun( )
+f1 <- function( par, dt.list, ns ) {
+  simdata(ws=par[1], ks=par[2], dt.list = dt.list, nsteps=ns) %>%
+   lapply( stat_fun )
 }
-#f1( c(t_w,t_k), dt=dt, ns=nsteps)
 
-# 2) Un primer ejercicio: simulo el caso que 'anda bien'
-# un solo conjunto de datos 'reales'
+# f1( par=c(2, 20), dt.list=list(1,2,4), ns=500 ) %>% str( max.level =1)
 
-nsteps <- 800 # number of moves performed by the animal
-# movement parameters:
-t_w <- 2
-t_k <- 20
-dt  <- 2 # time interval for observations
-data.obs <- simdata(ws=t_w, ks=t_k, dt=dt, nsteps=nsteps)
-stat.obs <- stat_fun(data.obs)
-
-# Uso dos previas: 
+# 2) Simulacion de conjunta (theta, s)
+#  Uso dos previas: 
 #       pr1 = independientes con marginales uniformes
 #       pr2 = normales con dependencia positiva
 
@@ -98,19 +90,24 @@ pr.norm <- rmvnorm(nsims, c(5, 50), sigma = diag(sds) %*% rr %*% diag(sds) ) %>%
 # pr.norm %>% ggplot() + geom_point(aes(s_w, s_k) )
 
 # obtener y salvar stats for simulated data (cada fila un stat, cada columna una sim)
-apply( pr.unif, 1,  f1, dt = 2, ns = 800)  %>%  
-  t() %>% as_data_frame() %>% 
-  set_names(nm = paste('T', 1:10, sep='')) %>%
-  bind_cols(pr.unif) %>% 
-  dplyr::select(s_w, s_k, T1:T10) %>%
+apply( pr.unif, 1,  
+             function(pp) {
+               f1(par=pp, dt.list = list( .05, .5, 5 ) , ns = 800) %>%
+                 bind_rows() %>%
+                 mutate(s_w = pp[1], s_k=pp[2], stat.nm = paste('T', 1:10, sep=''))
+             }) %>% 
+  bind_rows() %>%
+  gather(dt, stat.val, starts_with('dt') ) %>%
+  spread(stat.nm, stat.val) %>%
   saveRDS(file='SSM/statsim_unif.rds')
 
-apply( pr.norm, 1,  f1, dt = 2, ns = 800)  %>%  
-  t() %>% as_data_frame() %>% 
-  set_names(nm = paste('T', 1:10, sep='')) %>%
-  bind_cols(pr.norm) %>% 
-  dplyr::select(s_w, s_k, T1:T10) %>%
+apply( pr.norm, 1,  
+       function(pp) {
+         f1(par=pp, dt.list = list( .05, .5, 5 ) , ns = 800) %>%
+           bind_rows() %>%
+           mutate(s_w = pp[1], s_k=pp[2], stat.nm = paste('T', 1:10, sep=''))
+       }) %>% 
+  bind_rows() %>%
+  gather(dt, stat.val, starts_with('dt') ) %>%
+  spread(stat.nm, stat.val) %>%
   saveRDS(file='SSM/statsim_norm.rds')
-
-
-
