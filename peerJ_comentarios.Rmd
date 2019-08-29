@@ -1,0 +1,130 @@
+---
+title: "Untitled"
+author: "Ignacio Alvarez-Castro"
+date: "8/29/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Comentarios del REviewer 2, 
+
+### Basic reporting
+Line 20: For me, the term "Continuous time" makes me think that the movement process is something like Brownian motion. I do not agree with your language here. I think it is misleading. Maybe something like "where the time intervals between direction changes are stochastic." Actually,if you check your reference (McClintock et al., 2014) you find that they do not consider the CRW process to itself be a continuous time process, rather than extend it with an Ornstein-Uhlenbeck process. I think you should also change your title.
+
+*no se si estoy de acuerdo con el, se puede corroborar la referencia en todo caso, y usar para responder este comenntario*
+
+Line 43: It is unclear what the purpose of performing inference for this model is, “a convenient tool for movement data analysis” is not enough information. One or two sentences of plain language motivation for this work would be very helpful.
+
+*nos pide motivacion especifica de esta aplicacion, mas que de los modelos de movimiento. Creo que la motivacion va por el lado de combinar el modelo continuo con las obs discretas, no?*
+
+Please cite some previous work with animal movement models and ABC - unless it doesn't exist, in which case state that this is the first time ABC is applied to an animal movement model.
+
+*me acuerdo que uno de los revisores anteriores menciono esto, y nos puso un par de referencias, estan incluidas??*
+
+Line 65: "As a compromise between ... " this language makes it sounds like the movement process is novel.
+
+
+
+## English
+
+Line 28: This line in the abstract is unclear: "Our results suggest that accurate estimates can be obtained when the observations are less than 5 times the average time between changes in movement direction."
+
+*Simulation results suggest continous time model parameters can be recovered  if the time between observations is moderatedly close to time between changes in movement direction. When the ratio ratio is less than 5 the esimation error seem to be small enough*
+
+
+Line 31: Same line appears in both abstract and conclusion: "Our findings underscore the idea that the time scale at which animal movement decisions are made needs to be considered when designing data collection protocols, and that high-frequency data may not be necessary to have good estimates of certain movement processes." In Line 345 you refer to "coarser data", please make it more clear throughout the paper that the approach is most useful when trying to reconstruct the animal's path with coarse data.
+
+Line 43: Delete full stop at start of line.
+
+Figure captions. Check capitalization and punctuation, particularly Figure 3.
+
+Consistency: choose either "gray" or "grey".
+
+## Experimental design
+Line 57: This line seems to conflict with Line 31. If the modelling and observational time scales are independent under your framework, then wouldn't this mean that we don't need to pay as much attention to the time scale of animal movements when designing data collection protocols? Please make this more clear, with reference to your interesting finding on the relative time scale of observations (Line 292).
+
+*o yo no entiendo lo que dice, o no entendien el modelo. O sea, si supieramos el tiempo en que se toman las deciciones habria que observar en esos tiempos y chau. Pero eso no lo conoces, aunqeu si existe info previa hay que usarla para los data collection protocols*
+
+Line 71: I am unconvinced that the likelihood function is computationally intractable. Could you please discuss this in further detail? You found the turning times using Potts et al. (2018). Also previous studies seem to have conducted inference for this process? Perhaps your method is only necessary where data have been collected much less regularly? Please discuss this in the paper, along with a discussion of previous inference methods applied to this model.
+
+*Esto es relevante, no se que pruebas hicimos sobre la likelihood, la seccion que describe el modelo en nuestro paper no muestra mucho detalle sobre cual es la computacion que complica las cosas. Capaz que podemos pensar en ejemplos con muy pocos datos y medir tiempos ahi para dar una idea del costo (ej: estimar con 10, 100, 1000 datos y ver cuanto amuneta el timpo de calculo*
+
+Line 83: Could you please explain/discuss the difference between a correlated random walk and a velocity jump process. Why is it called "steps and turns" in the title? Please use a consistent term.
+
+Line 95: Has someone else used a von Mises distribution for this variable? If so could you please cite them.
+
+Line 145: Is it "synthetic" or "simulated" data. Please be consistent with your terms. I find it useful to call observed data, which is not really observed but the result of a simulation experiment to be "synthetic data" and data which is generated as part of the ABC algorithm $y_{\star}$ to be "simulated data".
+
+*tenemos que tener cuidado con la notacion si, pueden haber varias formas de notar los datos: observados, simulados, simulados pero que los uso como reales, etc*
+
+Line 248: "In order to estimate the parameters of the trajectory it was necessary to determine the points in which there was a change of movement direction. " Why is this necessary in the real data example, but not with the simulated data? Are you including knowledge of turning times in the simulated data? If so, then this is not truly an ABC technique since you are using something which is unobserved. This is really an MCMC (Potts et al., 2018) + ABC technique.
+
+It wasn't obvious to me whether the data are available. Are the data available? If so, where can they be obtained?
+
+*creo que aca, debemos aclarar mejor que los datos son mas complejos que el modelo que podemos estimar en este momento. Por eso hay que hacer un pre-procesamiento de los datos. Bueno.. esa es la idea que me quedo a mi al menos*
+
+
+## Some aspects of the model description are unclear.
+
+Why is $O_j = h(M_{0:N_j})$, a function of all positions, and not simply a function of the position of the last change in direction before observation? Is it because of the summation term over all $t_k$? Could we not just assume this information is provided without the previous state process values? <Actually,$t_k$ can be back-calculated from $M$>
+
+The time values $T_i := \sum_{k=1}^i t_k$ could be included in the input to the function $h$. Then we can write:
+
+$$
+o_{j,1} = \mu_{N_j, 1} + \cos(\phi_{N_j}) \left( j \Delta t - T_{N_j} \right) = h_1(M_{N_j}, T_{N_j})
+$$
+
+I suggest using $m$ and $o$ to denote realizations in the text as you have in the likelihood equation.
+
+Is it possible to simulate $M, T | O$, rather than simply $M, T$? This would guarantee that all simulated paths passed through the observed values, like a Brownian bridge?
+
+### Priors
+
+The priors should be written with an equals sign, e.g. $p(\kappa) = U[0,100]$. Alternatively, one can write $\kappa \sim U[0,100]$.
+
+Why does it say we draw $\kappa$ from $U[0,100]$ and then later say that $\kappa \leq 70$?
+
+### There are a number of problems with the description and notation of the state space model.
+
+Line 44: “The main idea is to estimate the latent process given the observed process.” This sentence is true, but misleading since in this study the latent movement process is neither estimated nor *always* latent. It’s not latent because it is assumed that there is no observation error. Perhaps, the sentence can be kept but another sentence added to the introduction to make it clear that the movement process is not estimated or latent. An alternative term for “latent process” is “state process”.
+
+I would not call the observational process a process, since it is deterministic, conditional on the state process.
+
+The description in the text of the complete-data likelihood, and its mathematical description do not correspond. $M$ and not $N$ is included as a condition in the equation of the complete-data likelihood.
+
+I would write:
+
+$$
+L(\kappa, \lambda ; O) = P(O_0 = o_0, O_1 = o_1, \dots, O_{N_{\text{obs}}} = o_{N_{\text{obs}}} | \kappa, \lambda).
+$$
+
+I don't see the purpose of discussing $L(\kappa, \lambda ; O, \{ N_j \}_{j=1}^{N_{\text{obs}}})$, since this isn't observed.
+
+You can't include $M$ in the conditional of the likelihood function, otherwise you would have to write
+
+$$
+\begin{aligned}
+L(\kappa, \lambda ; O, M, T) &= L(\kappa, \lambda ; M, T) \\
+&= P(\omega_{1:N_{\text{state}}}, t_{1:N_{\text{state}}} | \kappa, \lambda), \\
+&= P(\omega_{1:N_{\text{state}}} | \kappa) P(t_{1:N_{\text{state}}} | \lambda)
+\end{aligned}
+$$
+
+
+since $O$ is deterministic conditional on $M$ and $T$. It is implicitly assumed in your model that $T$ is included in the definition of $M$. Also, $\omega$ and $t$ can be back-calculated from $M$ and $T$ so if this is what is meant by the complete-data likelihood then it is indeed tractable.
+
+I don't see how the first summary statistic is a point estimate for $\lambda$. Also, the use of $t$ here is confusing. Simply write:
+$$
+1 / \sum_{j=0}^{N_{\text{obs}}} \sqrt{ (o_{j+1,1} - o_{j,1})^2 + (o_{j+1,2} - o_{j,2})^2 }.
+$$
+Validity of the findings
+Please see comments above regarding continuous-time, and how the frequency of data collection relates to the necessity of ABC for this model.
+
+Please discuss, in one or two sentences, how this work would be extended - or whether assumptions can be relaxed. For instance, do you think it would be possible for the observational time scale to also be random?
+
+
+Comments for the Author
+I think the work and the approach is interesting and valuable. However, I also think it needs to be explained much more clearly - especially how your work fits into the existing literature. The figures are clear, and the discussion of the ABC algorithm as applied to your problem is particularly thorough. Thank you for your submission.
